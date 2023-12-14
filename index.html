@@ -5583,6 +5583,23 @@ display: none;
 </div>
 
 
+<pre class="r"><code>## Children across the country rely on their public school’s nutrition program to cover the cost of their meals. Most of the time, federal subsidies do not cover the full cost of meals and the school system relies on state, school district, and local government funding to run child nutrition programs that provide food to children in need. From January 2019 to June 2021, non-federal child nutrition programs in 17 southern Virginia localities distributed over 1.4 million pounds of food. However, the number of children served plummeted from 99,350 in 2019 to 64,350 in 2020, a difference of over 35 thousand. 
+
+
+## This decline may be attributed to the COVID-19 pandemic which forced Virginia public schools to close their doors in March of 2020. Although some school systems in this dataset reopened for the 2020-2021 school year, the number of individuals served did not return to pre-pandemic levels. February typically records the highest number of children served –12,114 in 2019 and 12,558 in 2020 – but in 2021 only 5,880 children received food from these programs. 
+
+
+## Richmond, Chesterfield, and Halifax consistently distributed food to the most children. This adds up given Richmond and Chesterfield have some of the largest populations in southern Virginia, according to the U.S. Census Bureau. However, the U.S. Census Bureau reported that Halifax County had a population of 34,022 in 2020 which is significantly smaller than Richmond (226,610) and Chesterfield County’s (364,548) population in 2020.
+
+
+## Things I found in the data:
+### 1.The dataset only included southern VA localities.
+### 2.Only one row had different values for “pounds of food distributed” and “pounds of food distributed via non federal child nutrition programs.” It was hard to tell what the difference was, but when investigating the data I exclusively used the “pounds of food distributed” column .
+### 3. I did not understand the difference between “individuals served” and “children served via non federal child nutrition programs.&quot; I exclusively used “individuals served” when investigating the data.
+
+## Limitations
+### 1. I could not use an API key.
+### 2. I could not find a similar data set for northern Virginia to compare the richest Virginia locality (Loudoun county) to the poorest (Petersburg).</code></pre>
 <pre class="r"><code># Load packages
 library(tidyverse)</code></pre>
 <pre><code>## ── Attaching core tidyverse packages ──────────────────────── tidyverse 2.0.0 ──
@@ -6014,8 +6031,8 @@ va_map &lt;- leaflet() %&gt;%
 
 # Display the map
 va_map</code></pre>
-<div class="leaflet html-widget html-fill-item-overflow-hidden html-fill-item" id="htmlwidget-bd3f30b8b8034795df3c" style="width:672px;height:480px;"></div>
-<script type="application/json" data-for="htmlwidget-bd3f30b8b8034795df3c">{"x":{"options":{"crs":{"crsClass":"L.CRS.EPSG3857","code":null,"proj4def":null,"projectedBounds":null,"options":{}}},"calls":[{"method":"addProviderTiles","args":["Stadia.Outdoors",null,null,{"errorTileUrl":"","noWrap":false,"detectRetina":false}]}],"setView":[[37.4316,-78.64879999999999],7.5,[]]},"evals":[],"jsHooks":[]}</script>
+<div class="leaflet html-widget html-fill-item-overflow-hidden html-fill-item" id="htmlwidget-3b8e944e4c70f77f5f6e" style="width:672px;height:480px;"></div>
+<script type="application/json" data-for="htmlwidget-3b8e944e4c70f77f5f6e">{"x":{"options":{"crs":{"crsClass":"L.CRS.EPSG3857","code":null,"proj4def":null,"projectedBounds":null,"options":{}}},"calls":[{"method":"addProviderTiles","args":["Stadia.Outdoors",null,null,{"errorTileUrl":"","noWrap":false,"detectRetina":false}]}],"setView":[[37.4316,-78.64879999999999],7.5,[]]},"evals":[],"jsHooks":[]}</script>
 
 
 
