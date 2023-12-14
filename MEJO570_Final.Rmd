@@ -1,0 +1,340 @@
+---
+title: "MEJO570_Final"
+author: "Evan Black"
+date: "2023-11-29"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+# Load packages
+library(tidyverse)
+library(dplyr)
+library(lubridate)
+library(ggplot2)
+library(janitor)
+library(leaflet)
+library(sf)  
+```
+
+```{r}
+# Load the data
+library(readr)
+non_federal_child_nutrition_programs <- read_csv("Non-Federal_Child_Nutrition_programs.csv")
+View(non_federal_child_nutrition_programs)
+show_col_types = FALSE
+```
+
+
+```{r}
+non_federal_child_nutrition_programs <- janitor::clean_names(non_federal_child_nutrition_programs)
+```
+
+```{r}
+# Make sure the data is not a character string
+non_federal_child_nutrition_programs$year <- as.numeric(non_federal_child_nutrition_programs$year)
+non_federal_child_nutrition_programs$households_served <- as.numeric(non_federal_child_nutrition_programs$households_served)
+non_federal_child_nutrition_programs$individuals_served <- as.numeric(non_federal_child_nutrition_programs$individuals_served)
+non_federal_child_nutrition_programs$pounds_of_food_distributed <- as.numeric(non_federal_child_nutrition_programs$pounds_of_food_distributed)
+non_federal_child_nutrition_programs$children_served_via_non_federal_child_nutrition_programs <- as.numeric(non_federal_child_nutrition_programs$children_served_via_non_federal_child_nutrition_programs)
+```
+
+```{r}
+# See how many "localities" are in the data
+num_localities <- non_federal_child_nutrition_programs %>%
+  summarize(num_localities = n_distinct(locality))
+
+print(num_localities)
+```
+
+
+```{r}
+# Use count() to see how many data entries there are for each month
+count_results <- non_federal_child_nutrition_programs %>%
+  count(year, month)
+
+print(count_results)
+
+## Possible that some localities did not continue their nutrition programs when school was out of session (June, July, August)
+```
+
+```{r}
+# Check to see if "Pounds of food distributed" and "Pounds of food distributed via non-federal child nutrition programs" are the same
+difference_pounds_columns <- diff(non_federal_child_nutrition_programs$`pounds_of_food_distributed` - non_federal_child_nutrition_programs$"pounds_of_food_distributed_via_non_federal_child_nutrition_programs")
+
+## Check if there are any non-zero differences
+are_columns_different <- any(difference_pounds_columns != 0)
+
+
+print(are_columns_different)
+
+```
+
+```{r}
+# Find the rows where the columns are "pounds_of_food_distributed" and "pounds_of_food_distributed_via_non_federal_child_nutrition_programs" different
+
+rows_with_differences <- which(non_federal_child_nutrition_programs$"pounds_of_food_distributed" != non_federal_child_nutrition_programs$"pounds_of_food_distributed_via_non_federal_child_nutrition_programs")
+
+## Show only the rows with differences
+data_differences <- non_federal_child_nutrition_programs[rows_with_differences, ]
+
+
+View(data_differences)
+### Found that only row had different data
+```
+
+```{r}
+# Add a date column that is in ymd format using lubridate
+non_federal_child_nutrition_programs <- non_federal_child_nutrition_programs %>%
+  mutate(date = ymd(paste(year, month, "01")))
+```
+
+```{r}
+# Find the total amount of food donated across the dataset
+total_pounds_of_food <- sum(non_federal_child_nutrition_programs$pounds_of_food_distributed, na.rm = TRUE)
+print(paste("Total Pounds of Food Distributed: ", total_pounds_of_food, " pounds"))
+```
+
+
+```{r}
+# See what locality typically had the most households served
+arranged_data <- non_federal_child_nutrition_programs %>%
+  arrange(desc(individuals_served))
+
+print(arranged_data)
+```
+
+
+```{r}
+# Group by both month and year and summarize the total pounds
+food_by_month_year <- non_federal_child_nutrition_programs %>%
+  group_by(year, month) %>%
+  summarize(total_pounds = sum(pounds_of_food_distributed))
+
+## Add a column to identify duplicates
+food_by_month_year <- food_by_month_year %>%
+  mutate(is_duplicate = total_pounds == max(total_pounds))
+
+## Filter out duplicates
+max_row <- food_by_month_year %>%
+  filter(!is_duplicate)
+
+print(paste("Month and Year with the most pounds of food distributed:", max_row$month, max_row$year))
+```
+
+```{r}
+# Try to figure out what month typically has the most individuals served
+individuals_served_avg <- non_federal_child_nutrition_programs %>%
+  group_by(month) %>%
+  summarize(average_individuals_served = mean(individuals_served, na.rm = TRUE))
+
+## Did this to make sure the x axis is in chronological order
+individuals_served_avg$month <- factor(individuals_served_avg$month, levels = c("January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"))
+
+ggplot(individuals_served_avg, aes(x = month, y = average_individuals_served, group = 1)) +
+  geom_line() +
+  labs(title = "The Average of Individuals Served Over a Year",
+       x = "Month",
+       y = "Average Individuals Served")
+```
+
+```{r}
+month_order <- c("January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December")
+
+# Filter data for 2019
+data_2019 <- non_federal_child_nutrition_programs %>%
+  filter(year == 2019)
+
+
+data_2019$month <- factor(data_2019$month, levels = month_order)
+
+## Create a bar graph for 2019
+ggplot(data_2019, aes(x = month, y = individuals_served)) +
+  geom_col(stat = "identity", fill = "blue") +
+  labs(title = "Individuals Served in 2019",
+       x = "Month",
+       y = "Individuals Served") 
+
+# Filter data for 2020
+data_2020 <- non_federal_child_nutrition_programs %>%
+  filter(year == 2020)
+
+data_2020$month <- factor(data_2020$month, levels = month_order)
+
+## Create a bar graph for 2020
+ggplot(data_2020, aes(x = month, y = individuals_served)) +
+  geom_col(stat = "identity", fill = "orange") +
+  labs(title = "Individuals Served in 2020",
+       x = "Month",
+       y = "Individuals Served")
+
+# Filter data for 2021
+data_2021 <- non_federal_child_nutrition_programs %>%
+  filter(year == 2021)
+
+data_2021$month <- factor(data_2021$month, levels = month_order)
+
+## Create a bar graph for 2021
+ggplot(data_2021, aes(x = month, y = individuals_served)) +
+  geom_col(stat = "identity", fill = "purple") +
+  labs(title = "Individuals Served in 2021",
+       x = "Month",
+       y = "Individuals Served")
+```
+
+```{r}
+# Filter data for February in each year
+february_2019 <- non_federal_child_nutrition_programs %>%
+  filter(year == 2019, month == "February")
+
+february_2020 <- non_federal_child_nutrition_programs %>%
+  filter(year == 2020, month == "February")
+
+february_2021 <- non_federal_child_nutrition_programs %>%
+  filter(year == 2021, month == "February")
+
+## Total of individuals served for each year
+total_individuals <- data.frame(
+  Year = c(2019, 2020, 2021),
+  Total_Individuals_Served = c(
+    sum(february_2019$individuals_served),
+    sum(february_2020$individuals_served),
+    sum(february_2021$individuals_served)
+  )
+)
+
+print(total_individuals)
+```
+
+
+```{r}
+# Add a column that groups localities based on the pounds of food that were served
+non_federal_child_nutrition_programs <- non_federal_child_nutrition_programs %>%
+  mutate(
+    pounds_of_food_category = case_when(
+      pounds_of_food_distributed < 1000 ~ "Low",
+      pounds_of_food_distributed >= 1000 & pounds_of_food_distributed < 7000 ~ "Medium",
+      pounds_of_food_distributed >= 7000 ~ "High",
+      TRUE ~ "Unknown"  
+    )
+  )
+```
+
+```{r}
+# Filter data for low and high categories
+low_category <- filter(non_federal_child_nutrition_programs, pounds_of_food_category == "Low")
+medium_category <- filter(non_federal_child_nutrition_programs, pounds_of_food_category == "Medium")
+high_category <- filter(non_federal_child_nutrition_programs, pounds_of_food_category == "High")
+
+## Compare summary stats for all 3 categories
+input <- summary(non_federal_child_nutrition_programs)
+summary_low <- summary(low_category$pounds_of_food_distributed)
+summary_medium <- summary(medium_category$pounds_of_food_distributed)
+summary_high <- summary(high_category$pounds_of_food_distributed)
+
+print(input)
+print("Summary Statistics for Low Category:")
+print(summary_low)
+print("Summary Statistics for Medium Category:")
+print(summary_medium)
+print("Summary Statistics for High Category:")
+print(summary_high)
+```
+
+
+```{r}
+# Find total served
+
+## Filter data for 2019 and after March 2020
+total_served <- non_federal_child_nutrition_programs %>%
+  filter(year %in% c(2019, 2020, 2021))
+
+## Summarize individuals served each year
+summary_served <- total_served %>%
+  group_by(year) %>%
+  summarize(total_individuals_served = sum(individuals_served))
+
+## Remove missing values
+summary_served <- total_served %>%
+  group_by(year) %>%
+  summarize(total_individuals_served = sum(individuals_served, na.rm = TRUE))
+
+
+print(summary_served)
+
+```
+
+```{r}
+# Try and see how data compares from pre-pandemic, to during, to after
+
+## Filter data for 2019 and after March 2020
+filtered_data <- non_federal_child_nutrition_programs %>%
+  filter(year == 2019 | (date >= as.Date("2020-03-01")))
+
+## Summarize individuals served each year
+summary_data <- filtered_data %>%
+  group_by(year) %>%
+  summarize(total_individuals_served = sum(individuals_served))
+
+## Remove missing values
+summary_data <- filtered_data %>%
+  group_by(year) %>%
+  summarize(total_individuals_served = sum(individuals_served, na.rm = TRUE))
+
+print(summary_data)
+
+ggplot(summary_data, aes(x = factor(year), y = total_individuals_served)) +
+  geom_col() +
+  labs(title = "Individuals Served from 2019 to 2021",
+       x = "Year",
+       y = "Total Individuals Served")
+```
+
+
+```{r}
+# Add a column that groups localities based on the pounds of food that were served
+non_federal_child_nutrition_programs <- non_federal_child_nutrition_programs %>%
+  mutate(
+    pounds_of_food_category = case_when(
+      pounds_of_food_distributed < 1000 ~ "Low",
+      pounds_of_food_distributed >= 1000 & pounds_of_food_distributed < 7000 ~ "Medium",
+      pounds_of_food_distributed >= 7000 ~ "High",
+      TRUE ~ "Unknown"  
+    )
+  )
+```
+
+
+```{r}
+# Try to understand the distribution of the food throughout the different localities
+
+locality_distribution <- non_federal_child_nutrition_programs %>%
+  group_by(locality) %>%
+  summarize(count = n())
+
+print(locality_distribution)
+
+locality_distribution2 <- non_federal_child_nutrition_programs %>%
+  group_by(pounds_of_food_category) %>%
+  summarize(count = n())
+
+print(locality_distribution2)
+```
+
+```{r}
+library(leaflet)
+
+# Create a map of Virginia using Leaflet
+va_map <- leaflet() %>%
+  # Add base map tiles
+  addProviderTiles(providers$Stadia.Outdoors) %>%
+  setView(lng = -78.6488, lat = 37.4316, zoom = 7.5)
+
+# Display the map
+va_map
+```
+
